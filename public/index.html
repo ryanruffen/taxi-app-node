@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>MI-TAXI-APP | Mapa</title>
+    <style>
+        #map { height: 500px; width: 100%; border-radius: 12px; }
+        .search-container { margin: 20px; }
+        input { padding: 10px; width: 300px; }
+    </style>
+</head>
+<body>
+
+    <div class="search-container">
+        <input type="text" id="address-input" placeholder="¿A dónde vamos?" oninput="buscarDireccion()">
+        <ul id="results-list"></ul>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://maps.googleapis.com/maps/api/js?callback=initMap" defer></script>
+
+    <script>
+        let map;
+        function initMap() {
+            // Centrado cerca de tu zona actual en Shrewsbury, MA por defecto
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 42.2959, lng: -71.7128 },
+                zoom: 13,
+            });
+        }
+
+        async function buscarDireccion() {
+            const input = document.getElementById('address-input').value;
+            if (input.length < 3) return;
+
+            // LLAMADA A TU SERVIDOR (La parte clave)
+            const response = await fetch(`/api/autocomplete?input=${input}`);
+            const predicciones = await response.json();
+
+            const lista = document.getElementById('results-list');
+            lista.innerHTML = ""; // Limpiar lista previa
+
+            predicciones.forEach(lugar => {
+                const li = document.createElement('li');
+                li.textContent = lugar.description;
+                li.style.cursor = "pointer";
+                li.onclick = () => console.log("Seleccionaste:", lugar.place_id);
+                lista.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
