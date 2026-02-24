@@ -2,53 +2,71 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>MI-TAXI-APP | Mapa</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taxi App - Ryan Ruffen</title>
     <style>
-        #map { height: 500px; width: 100%; border-radius: 12px; }
-        .search-container { margin: 20px; }
-        input { padding: 10px; width: 300px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; padding-top: 50px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
+        h2 { color: #1a73e8; margin-top: 0; }
+        input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; outline: none; transition: border-color 0.3s; }
+        input:focus { border-color: #1a73e8; }
+        #lista-sugerencias { list-style: none; padding: 0; margin-top: 10px; background: white; border-radius: 8px; overflow: hidden; }
+        #lista-sugerencias li { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s; }
+        #lista-sugerencias li:hover { background-color: #f1f3f4; }
+        .btn-pedir { width: 100%; padding: 12px; background-color: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; margin-top: 15px; cursor: pointer; display: none; }
     </style>
 </head>
 <body>
 
-    <div class="search-container">
-        <input type="text" id="address-input" placeholder="¿A dónde vamos?" oninput="buscarDireccion()">
-        <ul id="results-list"></ul>
-    </div>
+<div class="card">
+    <h2>¿A dónde vamos, Ryan?</h2>
+    <input type="text" id="input-destino" placeholder="Escribe tu destino..." oninput="obtenerSugerencias()">
+    
+    <ul id="lista-sugerencias"></ul>
 
-    <div id="map"></div>
+    <button id="btn-pedir" class="btn-pedir" onclick="confirmarViaje()">Pedir Taxi</button>
+</div>
 
-    <script src="https://maps.googleapis.com/maps/api/js?callback=initMap" defer></script>
+<script>
+    async function obtenerSugerencias() {
+        const query = document.getElementById('input-destino').value;
+        const lista = document.getElementById('lista-sugerencias');
+        const boton = document.getElementById('btn-pedir');
 
-    <script>
-        let map;
-        function initMap() {
-            // Centrado cerca de tu zona actual en Shrewsbury, MA por defecto
-            map = new google.maps.Map(document.getElementById("map"), {
-                center: { lat: 42.2959, lng: -71.7128 },
-                zoom: 13,
-            });
+        if (query.length < 3) {
+            lista.innerHTML = '';
+            boton.style.display = 'none';
+            return;
         }
 
-        async function buscarDireccion() {
-            const input = document.getElementById('address-input').value;
-            if (input.length < 3) return;
+        try {
+            // Esta línea conecta con la API que configuraste en tu index.js
+            const response = await fetch(`/api/autocomplete?input=${query}`);
+            const datos = await response.json();
 
-            // LLAMADA A TU SERVIDOR (La parte clave)
-            const response = await fetch(`/api/autocomplete?input=${input}`);
-            const predicciones = await response.json();
-
-            const lista = document.getElementById('results-list');
-            lista.innerHTML = ""; // Limpiar lista previa
-
-            predicciones.forEach(lugar => {
+            lista.innerHTML = '';
+            datos.forEach(lugar => {
                 const li = document.createElement('li');
                 li.textContent = lugar.description;
-                li.style.cursor = "pointer";
-                li.onclick = () => console.log("Seleccionaste:", lugar.place_id);
+                li.onclick = () => seleccionarDestino(lugar.description);
                 lista.appendChild(li);
             });
+        } catch (error) {
+            console.error('Error al obtener direcciones:', error);
         }
-    </script>
+    }
+
+    function seleccionarDestino(direccion) {
+        document.getElementById('input-destino').value = direccion;
+        document.getElementById('lista-sugerencias').innerHTML = '';
+        document.getElementById('btn-pedir').style.display = 'block';
+    }
+
+    function confirmarViaje() {
+        const destino = document.getElementById('input-destino').value;
+        alert(`¡Listo Ryan! Buscando un conductor para llevarte a: \n${destino}`);
+    }
+</script>
+
 </body>
 </html>

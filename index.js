@@ -2,8 +2,13 @@ require('dotenv').config();
 
 const express = require('express');
 const { Client } = require("@googlemaps/google-maps-services-js");
+const mongoose = require('mongoose');
+const Viaje = require('./models/Viaje');
 const path = require('path');
 const rutasPasajeros = require('./routes/pasajeros');
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost/taxi-app')
+.then(() => console.log('✅ Base de datos conectada'))
+.catch(err => console.error('❌ Error de conexión:', err));
 const rutasConductores = require('./routes/conductores');
 
 const app = express();
