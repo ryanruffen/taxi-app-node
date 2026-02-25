@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taxi App - Ryan Ruffen</title>
+    <title>Taxi App - Ryan Ruffin</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; padding-top: 50px; }
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
@@ -28,74 +28,82 @@
 </div>
 
 <script>
-    async function obtenerSugerencias() {
-        const query = document.getElementById('input-destino').value;
-        const lista = document.getElementById('lista-sugerencias');
-        const boton = document.getElementById('btn-pedir');
+let indiceSugerencia = -1; // Rastrea qué dirección está seleccionada
 
-        if (query.length < 3) {
-            lista.innerHTML = '';
-            boton.style.display = 'none';
-            return;
-        }
-
-        try {
-            // Esta línea conecta con la API que configuraste en tu index.js
-            const response = await fetch(`/api/autocomplete?input=${query}`);
-            const datos = await response.json();
-
-            lista.innerHTML = '';
-            datos.forEach(lugar => {
-                const li = document.createElement('li');
-                li.textContent = lugar.description;
-                li.onclick = () => seleccionarDestino(lugar.description);
-                lista.appendChild(li);
-            });
-        } catch (error) {
-            console.error('Error al obtener direcciones:', error);
-        }
-    }
-
-    function seleccionarDestino(direccion) {
-        document.getElementById('input-destino').value = direccion;
-        document.getElementById('lista-sugerencias').innerHTML = '';
-        document.getElementById('btn-pedir').style.display = 'block';
-    }
-
-async function confirmarViaje() {
-    const destinoInput = document.getElementById('input-destino');
-    const destino = destinoInput.value;
+async function obtenerSugerencias() {
+    const query = document.getElementById('input-destino').value;
+    const lista = document.getElementById('lista-sugerencias');
     const boton = document.getElementById('btn-pedir');
-    
-    // Si el campo está vacío, no hacemos nada
-    if (!destino) return;
+    indiceSugerencia = -1; // Reiniciamos el índice al escribir
+
+    if (query.length < 3) {
+        lista.innerHTML = '';
+        boton.style.display = 'none';
+        return;
+    }
 
     try {
-        // Esta línea conecta con la ruta POST que creaste en index.js
-        const response = await fetch('/api/viajes', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ destino: destino })
-        });
-
+        const response = await fetch(`/api/autocomplete?input=${encodeURIComponent(query)}`);
         const datos = await response.json();
 
-        if (response.ok) {
-            // Si el servidor responde con éxito (status 201)
-            alert(`¡Excelente Ryan Ruffen! \nViaje guardado: ${destino}`);
-            
-            // Limpiamos el buscador para el próximo viaje
-            destinoInput.value = '';
-            boton.style.display = 'none';
-        } else {
-            alert('Error al guardar: ' + datos.error);
-        }
+        lista.innerHTML = '';
+        datos.forEach((lugar, index) => {
+            const li = document.createElement('li');
+            li.textContent = lugar.description;
+            li.id = `sug-${index}`; // ID único para cada opción
+            li.onclick = () => seleccionarDestino(lugar.description);
+            lista.appendChild(li);
+        });
     } catch (error) {
-        console.error('Error de conexión:', error);
-        alert('No se pudo conectar con el servidor para guardar el viaje.');
+        console.error('Error al obtener direcciones:', error);
     }
+}
+
+// NUEVO: Escuchar las flechas del teclado y el Enter
+document.getElementById('input-destino').addEventListener('keydown', function(e) {
+    const lista = document.getElementById('lista-sugerencias');
+    const sugerencias = lista.getElementsByTagName('li');
+
+    if (sugerencias.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+        // Bajar en la lista
+        e.preventDefault();
+        indiceSugerencia++;
+        if (indiceSugerencia >= sugerencias.length) indiceSugerencia = 0;
+        actualizarResaltado(sugerencias);
+    } 
+    else if (e.key === 'ArrowUp') {
+        // Subir en la lista
+        e.preventDefault();
+        indiceSugerencia--;
+        if (indiceSugerencia < 0) indiceSugerencia = sugerencias.length - 1;
+        actualizarResaltado(sugerencias);
+    } 
+    else if (e.key === 'Enter') {
+        // Seleccionar con Enter
+        e.preventDefault();
+        if (indiceSugerencia > -1) {
+            sugerencias[indiceSugerencia].click();
+        }
+    }
+});
+
+function actualizarResaltado(sugerencias) {
+    // Quitar el color gris de todos
+    Array.from(sugerencias).forEach(li => li.style.backgroundColor = 'white');
+    // Poner color gris al seleccionado
+    if (indiceSugerencia > -1) {
+        sugerencias[indiceSugerencia].style.backgroundColor = '#f1f3f4';
+        // Esto hace que el input muestre el texto mientras navegas (opcional)
+        document.getElementById('input-destino').value = sugerencias[indiceSugerencia].textContent;
+    }
+}
+
+function seleccionarDestino(direccion) {
+    document.getElementById('input-destino').value = direccion;
+    document.getElementById('lista-sugerencias').innerHTML = '';
+    document.getElementById('btn-pedir').style.display = 'block';
 }</script>
 
 </body>
